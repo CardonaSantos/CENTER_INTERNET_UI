@@ -257,7 +257,7 @@ export default function Layout2({ children }: LayoutProps) {
             <div className="mx-auto flex h-16 max-w-7xl w-full items-center px-4 sm:px-6 lg:px-8 justify-between">
               {/* Sección izquierda: Logo y nombre de la sucursal */}
               <div className="flex items-center space-x-2">
-                <Link to={"/"}>
+                <Link to={"/crm"}>
                   <img
                     className={`${
                       isCrmLocation ? classesCrmLogo : classesNova
@@ -266,7 +266,7 @@ export default function Layout2({ children }: LayoutProps) {
                     alt="Logo"
                   />
                 </Link>
-                <Link to={"/"}>
+                <Link to={"/crm"}>
                   <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
                     Center Internet
                   </p>

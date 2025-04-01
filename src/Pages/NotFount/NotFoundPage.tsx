@@ -36,7 +36,7 @@ export default function NotFoundPage() {
               className="flex items-center gap-2"
               asChild
             >
-              <Link to="/">
+              <Link to="/crm">
                 <Home className="h-4 w-4" />
                 <span>Ir a Inicio</span>
               </Link>
