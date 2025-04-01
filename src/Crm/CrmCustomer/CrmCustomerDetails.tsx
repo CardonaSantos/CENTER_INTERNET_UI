@@ -359,7 +359,7 @@ export default function CustomerDetails() {
                         <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
                         Dirección:
                       </dt>
-                      <dd className="col-span-2 truncate">
+                      <dd className="col-span-2 ">
                         {cliente.direccion || "No especificada"}
                       </dd>
                     </div>

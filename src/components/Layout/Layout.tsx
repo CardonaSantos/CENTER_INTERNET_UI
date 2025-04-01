@@ -13,7 +13,7 @@ import {
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ModeToggle } from "../mode-toggle";
 import nv2 from "@/assets/LOGOPNG.png";
-import nv3 from "@/assets/Logonuevo.png";
+import nv3 from "@/assets/LogoCrmPng.png";
 
 import {
   DropdownMenu,
@@ -242,6 +242,9 @@ export default function Layout2({ children }: LayoutProps) {
     }
   }, [socket]);
 
+  const classesCrmLogo = "h-14 w-14 md:h-24 md:w-24";
+  const classesNova = "h-16 w-16 md:h-10 md:w-16";
+
   return (
     <div className="flex min-h-screen">
       <SidebarProvider>
@@ -254,18 +257,20 @@ export default function Layout2({ children }: LayoutProps) {
             <div className="mx-auto flex h-16 max-w-7xl w-full items-center px-4 sm:px-6 lg:px-8 justify-between">
               {/* Sección izquierda: Logo y nombre de la sucursal */}
               <div className="flex items-center space-x-2">
-                {/* <Link to={"/"}> */}
-                <img
-                  className="h-10 w-10 md:h-10 md:w-16" // Mobile: 12x12, Medium+: 16x28
-                  src={isCrmLocation ? nv3 : nv2}
-                  alt="Logo"
-                />
-                {/* </Link> */}
-                {/* <Link to={"/"}> */}
-                <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
-                  Center Internet
-                </p>
-                {/* </Link> */}
+                <Link to={"/"}>
+                  <img
+                    className={`${
+                      isCrmLocation ? classesCrmLogo : classesNova
+                    }`} // Mobile: 12x12, Medium+: 16x28
+                    src={isCrmLocation ? nv3 : nv2}
+                    alt="Logo"
+                  />
+                </Link>
+                <Link to={"/"}>
+                  <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
+                    Center Internet
+                  </p>
+                </Link>
               </div>
               {/* vitaFertil-universal-forma:pachon, normal */}
               {/* Sección derecha: Toggle de modo, notificaciones y menú de usuario */}

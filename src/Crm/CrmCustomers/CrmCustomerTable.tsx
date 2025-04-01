@@ -30,6 +30,8 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import ReactSelectComponent from "react-select";
 import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
 
+import { useDeferredValue } from "react";
+
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -81,6 +83,8 @@ interface OptionSelect {
 
 export default function ClientesTable() {
   const [filter, setFilter] = useState("");
+  const filtered2 = useDeferredValue(filter);
+
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState<any>([]);
   const [clientes, setClientes] = useState<ClienteDto[]>([]);
@@ -179,60 +183,77 @@ export default function ClientesTable() {
   };
 
   const filteredClientes = useMemo(() => {
-    return zonasFacturacionSelected
-      ? clientes.filter(
-          (cliente) =>
-            cliente.facturacionZonaId === Number(zonasFacturacionSelected)
-        )
-      : clientes;
-  }, [clientes, zonasFacturacionSelected]); // Solo recalcula si clientes o zonasFacturacionSelected cambian
+    // Convertir el filtro a minúsculas y quitar espacios
+    const search = filtered2.toLowerCase().trim();
+
+    return clientes.filter((cliente) => {
+      const matchesZona = zonasFacturacionSelected
+        ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
+        : true;
+
+      const fullName = `${cliente.nombreCompleto}`.toLowerCase();
+
+      const telefono = cliente.telefono?.toLowerCase() || "";
+      const ip = cliente.direccionIp?.toLowerCase() || "";
+
+      const matchesSearch =
+        search === "" ||
+        fullName.includes(search) ||
+        telefono.includes(search) ||
+        ip.includes(search);
+
+      return matchesZona && matchesSearch;
+    });
+  }, [clientes, zonasFacturacionSelected, filtered2]);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [zonasFacturacionSelected]); // Resetear a página 1 cuando el filtro cambie
 
+  const filteredClientesZona = useMemo(() => {
+    return clientes.filter((cliente) =>
+      zonasFacturacionSelected
+        ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
+        : true
+    );
+  }, [clientes, zonasFacturacionSelected]);
+
+  // **Configuración de la tabla**
   // **Configuración de la tabla**
   const table = useReactTable({
-    data: filteredClientes,
+    data: filteredClientesZona, // Cambiar a filteredClientesZona
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     state: {
-      globalFilter: filter,
+      globalFilter: filtered2,
       pagination,
       sorting,
     },
     onGlobalFilterChange: setFilter,
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
-    globalFilterFn: (row, value) => {
-      const search = value.trim().toLocaleLowerCase();
-      const cliente = row.original;
+    globalFilterFn: (row, columnId, value) => {
+      console.log(columnId);
+
+      const search = value.toLowerCase().trim();
+      const cliente = row.original as ClienteDto;
+
       return (
-        (cliente.nombreCompleto || "")
-          .toString()
-          .toLocaleLowerCase()
-          .includes(search) ||
-        (cliente.telefono || "")
-          .toString()
-          .toLocaleLowerCase()
-          .includes(search) ||
-        (cliente.direccionIp || "")
-          .toString()
-          .toLocaleLowerCase()
-          .includes(search) ||
-        (cliente.direccion || "")
-          .toString()
-          .toLocaleLowerCase()
-          .includes(search) ||
-        (cliente.dpi || "").toString().toLocaleLowerCase().includes(search)
+        (cliente.id?.toString() || "").includes(search) ||
+        (cliente.nombreCompleto || "").toLowerCase().includes(search) ||
+        // (cliente.apellidos || "").toLowerCase().includes(search) ||
+        (cliente.telefono || "").toLowerCase().includes(search) ||
+        (cliente.direccionIp || "").toLowerCase().includes(search) ||
+        (cliente.direccion || "").toLowerCase().includes(search) ||
+        (cliente.dpi || "").toLowerCase().includes(search)
       );
     },
   });
 
-  console.log("Los clientes son: ", clientes);
+  console.log("Los clientes filtrados son: ", filteredClientes);
 
   return (
     <Card className="max-w-full shadow-lg">
@@ -333,7 +354,7 @@ export default function ClientesTable() {
                     className="contents"
                   >
                     <td className="px-2 py-1 truncate max-w-[120px] hover:underline">
-                      {row.original.nombreCompleto}
+                      {`${row.original.nombreCompleto}`.trim()}
                     </td>
                   </Link>
                   <td className="px-2 py-1 truncate max-w-[90px] whitespace-nowrap">
