@@ -84,7 +84,7 @@ interface TicketSoporte {
   fechaCierre: string | null; // ISO string or null
 }
 
-interface FacturaInternet {
+export interface FacturaInternet {
   id: number;
   monto: number;
   fechaEmision: string; // ISO string

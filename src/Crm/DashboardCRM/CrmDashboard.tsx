@@ -5,7 +5,7 @@ import DesvanecerHaciaArriba from "../Motion/DashboardAnimations";
 import { motion } from "framer-motion";
 import LightCardMotion from "../Motion/CardMotion";
 import MyTickets from "./MyTickets";
-import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
+import { RolUsuario, useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 import axios from "axios";
 import { useEffect, useState } from "react";
 const tokencrm = localStorage.getItem("authTokenCRM");
@@ -71,50 +71,59 @@ export default function CrmDashboard() {
     }
   };
 
+  const userRol = useStoreCrm((state) => state.rol);
+
+  // Función reutilizable para comprobar el rol
+  const hasAccessForRole = (userRol: RolUsuario | null) => {
+    return userRol !== null && ["ADMIN", "SUPER_ADMIN"].includes(userRol);
+  };
+
   return (
     <motion.div
       {...DesvanecerHaciaArriba}
       className="container mx-auto p-4 space-y-4"
     >
       <h1 className="text-lg font-bold md:text-3xl lg:text-4xl text-center underline">
-        Dashboard CRM
+        Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <StatCard
-          title="Clientes Activos"
-          value={dashboardData?.activeClients.toString() ?? ""}
-          icon={<Users className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatCard
-          title="Clientes Morosos"
-          value={dashboardData?.delinquentClients.toString() ?? ""}
-          icon={<UserMinus className="h-4 w-4 text-muted-foreground" />}
-        />
+      {hasAccessForRole(userRol) && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <StatCard
+            title="Clientes Activos"
+            value={dashboardData?.activeClients.toString() ?? ""}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Clientes Morosos"
+            value={dashboardData?.delinquentClients.toString() ?? ""}
+            icon={<UserMinus className="h-4 w-4 text-muted-foreground" />}
+          />
 
-        <StatCard
-          title="Clientes Suspendidos"
-          value={dashboardData?.suspendedClients.toString() ?? ""}
-          icon={<WifiOff className="h-4 w-4 text-muted-foreground" />}
-        />
+          <StatCard
+            title="Clientes Suspendidos"
+            value={dashboardData?.suspendedClients.toString() ?? ""}
+            icon={<WifiOff className="h-4 w-4 text-muted-foreground" />}
+          />
 
-        <StatCard
-          title="Clientes Desconectados"
-          value={dashboardData?.suspendedClients.toString() ?? ""}
-          icon={<UserX className="h-4 w-4 text-muted-foreground" />}
-        />
+          <StatCard
+            title="Clientes Desconectados"
+            value={dashboardData?.suspendedClients.toString() ?? ""}
+            icon={<UserX className="h-4 w-4 text-muted-foreground" />}
+          />
 
-        <StatCard
-          title="Servicios Activos"
-          value={dashboardData?.activeServices.toString() ?? ""}
-          icon={<Zap className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatCard
-          title="Servicios Suspendidos"
-          value={dashboardData?.suspendedServices.toString() ?? ""}
-          icon={<ZapOff className="h-4 w-4 text-muted-foreground" />}
-        />
-      </div>
+          <StatCard
+            title="Servicios Activos"
+            value={dashboardData?.activeServices.toString() ?? ""}
+            icon={<Zap className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Servicios Suspendidos"
+            value={dashboardData?.suspendedServices.toString() ?? ""}
+            icon={<ZapOff className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
+      )}
 
       <div className="container mx-auto space-y-4">
         <MyTickets tickets={tickets} />

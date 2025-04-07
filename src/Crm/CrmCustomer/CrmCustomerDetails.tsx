@@ -26,6 +26,8 @@ import {
   Clock3,
   Wallet,
   Receipt,
+  MoreHorizontal,
+  Waypoints,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,10 +53,10 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ClienteDetailsDto } from "./CustomerDetails";
+import { ClienteDetailsDto, FacturaInternet } from "./CustomerDetails";
 import currency from "currency.js";
 
 import dayjs from "dayjs";
@@ -67,6 +69,27 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  // DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import FacturaGenerateDialog from "./Factura/FacturaGenerateDialog";
+import GenerateFacturas from "./Factura/GenerateFacturas";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RolUsuario, useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -87,6 +110,7 @@ const formatearMoneda = (monto: number) => {
 
 export default function CustomerDetails() {
   const { id } = useParams();
+  const userRol = useStoreCrm((state) => state.rol);
   const [cliente, setCliente] = useState<ClienteDetailsDto>({
     id: 0,
     nombre: "",
@@ -133,6 +157,8 @@ export default function CustomerDetails() {
     facturaInternet: [],
     clienteServicio: [],
   });
+
+  // AJUSTAR EL SERVICIO DE GENERAR UNA FACTURA, QUE LA FECHA DE VENCIMIENTO, COINCIDA CON EL MES ASIGNADO, Y CREAREMOS OTROS
 
   const getClienteDetails = async () => {
     try {
@@ -243,6 +269,56 @@ export default function CustomerDetails() {
   };
 
   console.log("El cliente es: ", cliente);
+  const [openGenerarFactura, setOpenGenerarFactura] = useState(false);
+
+  const [openGenerateFacturas, setOpenGenerateFacturas] = useState(false);
+  //
+  const [openDeleteFactura, setOpenDeleteFactura] = useState(false);
+  const [facturaAction, setFacturaAction] = useState<FacturaInternet | null>(
+    null
+  );
+
+  const handleDeleteFactura = async () => {
+    if (!facturaAction) {
+      toast.warning("No hay factura seleccionada para eliminar");
+      return;
+    }
+
+    const { id, estado, fechaEmision, fechaVencimiento } = facturaAction;
+
+    try {
+      const response: AxiosResponse = await axios.delete(
+        `${VITE_CRM_API_URL}/facturacion/delete-one-factura`,
+        {
+          data: {
+            facturaId: id,
+            estadoFactura: estado,
+            fechaEmision,
+            fechaVencimiento,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Factura eliminada correctamente");
+        getClienteDetails();
+        setFacturaAction(null);
+        setOpenDeleteFactura(false);
+      } else {
+        toast.error("No se pudo eliminar la factura");
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar factura:", error);
+      toast.error("Ocurrió un error al intentar eliminar la factura");
+    }
+  };
+  console.log("La factura a eliminar es: ", facturaAction);
+
+  const hasAccessForRole = (userRol: RolUsuario | null) => {
+    return (
+      userRol !== null && ["ADMIN", "SUPER_ADMIN", "COBRADOR"].includes(userRol)
+    );
+  };
 
   return (
     <div className="container mx-auto  py-6">
@@ -437,7 +513,7 @@ export default function CustomerDetails() {
                         <MessageSquare className="h-3 w-3 mr-1 text-muted-foreground" />
                         Observaciones:
                       </dt>
-                      <dd className="col-span-2 truncate">
+                      <dd className="col-span-2 ">
                         {cliente.observaciones ||
                           "No hay observaciones registradas."}
                       </dd>
@@ -781,12 +857,50 @@ export default function CustomerDetails() {
           <TabsContent value="facturacion" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Wallet className="h-4 w-4 mr-2 text-primary" />
-                    Saldo del Cliente
-                  </CardTitle>
-                </CardHeader>
+                <div className="gap-2 block">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base flex items-center">
+                      <Wallet className="h-4 w-4 mr-2 text-primary dark:text-white" />
+                      Saldo del Cliente
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {hasAccessForRole(userRol) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Abrir menú</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            {/* Primera sección */}
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setOpenGenerarFactura(true);
+                                }}
+                              >
+                                Generar factura individual
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+
+                            <DropdownMenuSeparator />
+
+                            {/* Segunda sección */}
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem
+                                onClick={() => setOpenGenerateFacturas(true)}
+                              >
+                                Generar múltiples facturas
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
+                </div>
+
                 <CardContent className="text-sm">
                   {cliente.saldoCliente ? (
                     <dl className="grid grid-cols-1 gap-4">
@@ -881,157 +995,198 @@ export default function CustomerDetails() {
                             <TableHead className="w-[100px] font-medium">
                               Estado
                             </TableHead>
+
+                            <TableHead className="w-[100px] font-medium">
+                              Accion
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {cliente.facturaInternet.map((factura) => (
-                            <React.Fragment key={factura.id}>
-                              <TableRow className="border-b-0 hover-row transition-colors">
-                                <TableCell className="font-medium text-primary">
-                                  #{factura.id}
-                                </TableCell>
-                                <TableCell>
-                                  {formatearFecha(factura.fechaEmision)}
-                                </TableCell>
-                                <TableCell>
-                                  <Link
-                                    className="text-blue-500 underline"
-                                    to={`/crm/facturacion/pago-factura/${factura.id}`}
-                                  >
-                                    {formatearFecha(factura.fechaVencimiento)}
-                                  </Link>
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {formatearMoneda(factura.monto)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    className={
-                                      factura.estado === "PAGADA"
-                                        ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-medium"
-                                        : factura.estado === "PENDIENTE"
-                                        ? "bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 font-medium"
-                                        : "bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0 font-medium"
-                                    }
-                                  >
-                                    {factura.estado}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-
-                              <TableRow className="hover:bg-transparent">
-                                <TableCell colSpan={5} className="p-0 border-b">
-                                  <Accordion
-                                    type="single"
-                                    collapsible
-                                    className="w-full"
-                                  >
-                                    <AccordionItem
-                                      value={`factura-${factura.id}`}
-                                      className="border-0"
+                          {cliente.facturaInternet
+                            .sort(
+                              (a, b) =>
+                                new Date(b.fechaEmision).getTime() -
+                                new Date(a.fechaEmision).getTime()
+                            )
+                            .map((factura) => (
+                              <React.Fragment key={factura.id}>
+                                <TableRow className="border-b-0 hover-row transition-colors">
+                                  <TableCell className="font-medium text-primary">
+                                    #{factura.id}
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatearFecha(factura.fechaEmision)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Link
+                                      className="text-blue-500 underline"
+                                      to={`/crm/facturacion/pago-factura/${factura.id}`}
                                     >
-                                      <AccordionTrigger className="py-1 px-2 text-xs text-muted-foreground accordion-hover transition-colors no-underline">
-                                        <div className="flex items-center">
-                                          <Receipt className="h-3 w-3 mr-1 text-primary" />
-                                          <span className="text-xs">
-                                            {factura.pagos &&
-                                            Array.isArray(factura.pagos) &&
-                                            factura.pagos.length > 0
-                                              ? `${factura.pagos.length} Pagos`
-                                              : "Sin pagos"}
+                                      {formatearFecha(factura.fechaVencimiento)}
+                                    </Link>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {formatearMoneda(factura.monto)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={
+                                        factura.estado === "PAGADA"
+                                          ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-medium"
+                                          : factura.estado === "PENDIENTE"
+                                          ? "bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 font-medium"
+                                          : "bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0 font-medium"
+                                      }
+                                    >
+                                      {factura.estado}
+                                    </Badge>
+                                  </TableCell>
+
+                                  <TableCell className="">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger>
+                                        <Button
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0 hover:bg-muted/50 hover:text-primary transition-colors"
+                                          title="Acciones disponibles"
+                                        >
+                                          <Waypoints className="h-4 w-4 dark:text-white" />
+                                          <span className="sr-only">
+                                            Accion
                                           </span>
-                                        </div>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="px-2 pb-2 pt-0 data-[state=open]:animate-none bg-muted/10">
-                                        {factura.pagos &&
-                                        Array.isArray(factura.pagos) &&
-                                        factura.pagos.length > 0 ? (
-                                          <div className="overflow-x-auto rounded-sm border border-muted mt-1">
-                                            <Table className="w-full [&_th]:py-1 [&_td]:py-1 [&_th]:text-[10px] [&_td]:text-[10px]">
-                                              <TableHeader className="bg-muted/30">
-                                                <TableRow className="hover:bg-transparent">
-                                                  <TableHead className="font-medium">
-                                                    Fecha
-                                                  </TableHead>
-                                                  <TableHead className="font-medium">
-                                                    Método
-                                                  </TableHead>
-                                                  <TableHead className="font-medium">
-                                                    Monto
-                                                  </TableHead>
-                                                  <TableHead className="font-medium">
-                                                    Cobrador
-                                                  </TableHead>
-                                                  <TableHead className="text-right w-[50px] font-medium">
-                                                    PDF
-                                                  </TableHead>
-                                                </TableRow>
-                                              </TableHeader>
-                                              <TableBody>
-                                                {factura.pagos.map(
-                                                  (pago, index) => (
-                                                    <TableRow
-                                                      key={`${factura.id}-pago-${index}`}
-                                                      className="hover-row transition-colors"
-                                                    >
-                                                      <TableCell>
-                                                        {formatearFecha(
-                                                          pago.fechaPago
-                                                        )}
-                                                      </TableCell>
-                                                      <TableCell>
-                                                        <Badge
-                                                          variant="outline"
-                                                          className="font-normal text-[10px] px-1 py-0 bg-background"
-                                                        >
-                                                          {pago.metodoPago}
-                                                        </Badge>
-                                                      </TableCell>
-                                                      <TableCell className="font-medium">
-                                                        {formatearMoneda(
-                                                          pago.montoPagado
-                                                        )}
-                                                      </TableCell>
-                                                      <TableCell>
-                                                        {pago.cobrador
-                                                          ?.nombreCobrador ||
-                                                          "N/A"}
-                                                      </TableCell>
-                                                      <TableCell className="text-right">
-                                                        <Button
-                                                          variant="ghost"
-                                                          size="sm"
-                                                          className="h-6 w-6 p-0 hover:bg-muted/50 hover:text-primary transition-colors"
-                                                          title="Generar PDF"
-                                                        >
-                                                          <FileText className="h-3 w-3" />
-                                                          <span className="sr-only">
-                                                            PDF
-                                                          </span>
-                                                        </Button>
-                                                      </TableCell>
-                                                    </TableRow>
-                                                  )
-                                                )}
-                                              </TableBody>
-                                            </Table>
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setOpenDeleteFactura(true);
+                                            setFacturaAction(factura);
+                                          }}
+                                        >
+                                          Eliminar
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
+                                </TableRow>
+
+                                <TableRow className="hover:bg-transparent">
+                                  <TableCell
+                                    colSpan={5}
+                                    className="p-0 border-b"
+                                  >
+                                    <Accordion
+                                      type="single"
+                                      collapsible
+                                      className="w-full"
+                                    >
+                                      <AccordionItem
+                                        value={`factura-${factura.id}`}
+                                        className="border-0"
+                                      >
+                                        <AccordionTrigger className="py-1 px-2 text-xs text-muted-foreground accordion-hover transition-colors no-underline">
+                                          <div className="flex items-center">
+                                            <Receipt className="h-3 w-3 mr-1 text-primary" />
+                                            <span className="text-xs">
+                                              {factura.pagos &&
+                                              Array.isArray(factura.pagos) &&
+                                              factura.pagos.length > 0
+                                                ? `${factura.pagos.length} Pagos`
+                                                : "Sin pagos"}
+                                            </span>
                                           </div>
-                                        ) : factura.estado === "PAGADA" ? (
-                                          <div className="text-[10px] text-center text-muted-foreground py-2 italic">
-                                            Factura pagada sin detalles de pago
-                                          </div>
-                                        ) : (
-                                          <div className="text-[10px] text-center text-muted-foreground py-2 italic">
-                                            No hay pagos registrados
-                                          </div>
-                                        )}
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  </Accordion>
-                                </TableCell>
-                              </TableRow>
-                            </React.Fragment>
-                          ))}
+                                        </AccordionTrigger>
+                                        <AccordionContent className="px-2 pb-2 pt-0 data-[state=open]:animate-none bg-muted/10">
+                                          {factura.pagos &&
+                                          Array.isArray(factura.pagos) &&
+                                          factura.pagos.length > 0 ? (
+                                            <div className="overflow-x-auto rounded-sm border border-muted mt-1">
+                                              <Table className="w-full [&_th]:py-1 [&_td]:py-1 [&_th]:text-[10px] [&_td]:text-[10px]">
+                                                <TableHeader className="bg-muted/30">
+                                                  <TableRow className="hover:bg-transparent">
+                                                    <TableHead className="font-medium">
+                                                      Fecha
+                                                    </TableHead>
+                                                    <TableHead className="font-medium">
+                                                      Método
+                                                    </TableHead>
+                                                    <TableHead className="font-medium">
+                                                      Monto
+                                                    </TableHead>
+                                                    <TableHead className="font-medium">
+                                                      Cobrador
+                                                    </TableHead>
+                                                    <TableHead className="text-right w-[50px] font-medium">
+                                                      PDF
+                                                    </TableHead>
+                                                  </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                  {factura.pagos.map(
+                                                    (pago, index) => (
+                                                      <TableRow
+                                                        key={`${factura.id}-pago-${index}`}
+                                                        className="hover-row transition-colors"
+                                                      >
+                                                        <TableCell>
+                                                          {formatearFecha(
+                                                            pago.fechaPago
+                                                          )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          <Badge
+                                                            variant="outline"
+                                                            className="font-normal text-[10px] px-1 py-0 bg-background"
+                                                          >
+                                                            {pago.metodoPago}
+                                                          </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="font-medium">
+                                                          {formatearMoneda(
+                                                            pago.montoPagado
+                                                          )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                          {pago.cobrador
+                                                            ?.nombreCobrador ||
+                                                            "N/A"}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0 hover:bg-muted/50 hover:text-primary transition-colors"
+                                                            title="Generar PDF"
+                                                          >
+                                                            <FileText className="h-3 w-3" />
+                                                            <span className="sr-only">
+                                                              PDF
+                                                            </span>
+                                                          </Button>
+                                                        </TableCell>
+                                                      </TableRow>
+                                                    )
+                                                  )}
+                                                </TableBody>
+                                              </Table>
+                                            </div>
+                                          ) : factura.estado === "PAGADA" ? (
+                                            <div className="text-[10px] text-center text-muted-foreground py-2 italic">
+                                              Factura pagada sin detalles de
+                                              pago
+                                            </div>
+                                          ) : (
+                                            <div className="text-[10px] text-center text-muted-foreground py-2 italic">
+                                              No hay pagos registrados
+                                            </div>
+                                          )}
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    </Accordion>
+                                  </TableCell>
+                                </TableRow>
+                              </React.Fragment>
+                            ))}
                         </TableBody>
                       </Table>
                     </div>
@@ -1049,6 +1204,65 @@ export default function CustomerDetails() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* DIALOG PARA GENERAR UNA FACTURA-PASADA-FUTURA */}
+
+      <FacturaGenerateDialog
+        openGenerarFactura={openGenerarFactura}
+        setOpenGenerarFactura={setOpenGenerarFactura}
+        //funcion enviar
+        // handleGenerateFactura={handleGenerateFactura}
+        clienteId={cliente.id}
+        getClienteDetails={getClienteDetails}
+      />
+
+      <GenerateFacturas
+        openGenerateFacturas={openGenerateFacturas}
+        setOpenGenerateFacturas={setOpenGenerateFacturas}
+        //
+        clienteId={cliente.id}
+        getClienteDetails={getClienteDetails}
+      />
+
+      <Dialog open={openDeleteFactura} onOpenChange={setOpenDeleteFactura}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              ¿Está seguro que desea eliminar esta factura? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Advertencia</AlertTitle>
+              <AlertDescription>
+                El saldo y estado del cliente se verán afectados en función de
+                su saldo actual y su relacion con sus facturas.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDeleteFactura(false)}
+              // disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFactura}
+              // disabled={isLoading}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

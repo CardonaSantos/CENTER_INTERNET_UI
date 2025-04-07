@@ -32,6 +32,7 @@ enum RolUsuario {
   OFICINA = "OFICINA",
   ADMIN = "ADMIN",
   SUPER_ADMIN = "SUPER_ADMIN",
+  COBRADOR = "COBRADOR",
 }
 
 export default function CrmRegist() {
@@ -152,7 +153,10 @@ export default function CrmRegist() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={RolUsuario.TECNICO}>Técnico</SelectItem>
+
                   <SelectItem value={RolUsuario.OFICINA}>Oficina</SelectItem>
+                  <SelectItem value={RolUsuario.COBRADOR}>Cobrador</SelectItem>
+
                   <SelectItem value={RolUsuario.ADMIN}>
                     Administrador
                   </SelectItem>

@@ -5,6 +5,7 @@ enum RolUsuario {
   TECNICO = "TECNICO",
   OFICINA = "OFICINA",
   ADMIN = "ADMIN",
+  COBRADOR = "COBRADOR",
   SUPER_ADMIN = "SUPER_ADMIN",
 }
 

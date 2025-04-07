@@ -109,25 +109,11 @@ function CrmCreateTicket({
   });
 
   // Datos simulados
-  const [clientes, setClientes] = useState<Cliente[]>([
-    { id: 1, nombre: "Juan Pérez" },
-    { id: 2, nombre: "María López" },
-    { id: 3, nombre: "Carlos Rodríguez" },
-    { id: 4, nombre: "Ana Martínez" },
-    { id: 5, nombre: "Roberto Gómez" },
-  ]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
 
-  const [empresas, setEmpresas] = useState<Empresa[]>([
-    { id: 1, nombre: "Empresa A" },
-    { id: 2, nombre: "Empresa B" },
-    { id: 3, nombre: "Empresa C" },
-  ]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
-  const [tecnicos, setTecnicos] = useState<Usuario[]>([
-    { id: 1, nombre: "Técnico 1" },
-    { id: 2, nombre: "Técnico 2" },
-    { id: 3, nombre: "Técnico 3" },
-  ]);
+  const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
 
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
 
@@ -334,10 +320,11 @@ function CrmCreateTicket({
                   isClearable
                   className="text-black text-sm"
                   options={optionsTecs}
-                  value={optionsTecs.find(
-                    (tec) =>
-                      tec.value === formData.tecnicoId?.toString() || null
-                  )}
+                  value={
+                    optionsTecs.find(
+                      (tec) => tec.value === formData.tecnicoId?.toString()
+                    ) || null
+                  }
                   onChange={handleChangeTecSelect}
                 />
               </div>

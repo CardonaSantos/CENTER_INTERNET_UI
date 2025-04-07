@@ -31,6 +31,7 @@ import ReactSelectComponent from "react-select";
 import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
 
 import { useDeferredValue } from "react";
+import { RolUsuario, useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -88,6 +89,8 @@ export default function ClientesTable() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState<any>([]);
   const [clientes, setClientes] = useState<ClienteDto[]>([]);
+
+  const userRol = useStoreCrm((state) => state.rol);
 
   const [zonasFacturacion, setZonasFacturacion] = useState<FacturacionZona[]>(
     []
@@ -255,6 +258,11 @@ export default function ClientesTable() {
 
   console.log("Los clientes filtrados son: ", filteredClientes);
 
+  // Función reutilizable para comprobar el rol
+  const hasAccessForRole = (userRol: RolUsuario | null) => {
+    return userRol !== null && ["ADMIN", "SUPER_ADMIN"].includes(userRol);
+  };
+
   return (
     <Card className="max-w-full shadow-lg">
       <CardContent>
@@ -332,7 +340,9 @@ export default function ClientesTable() {
                 <th className="px-2 py-1 border font-semibold">
                   Zona de Facturación
                 </th>
-                <th className="px-2 py-1 border font-semibold">Acciones</th>
+                {hasAccessForRole(userRol) && (
+                  <th className="px-2 py-1 border font-semibold">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -371,13 +381,16 @@ export default function ClientesTable() {
                   <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
                     {row.original.facturacionZona}
                   </td>
-                  <td className="px-2 py-1 flex justify-center items-center">
-                    <Link to={`/crm/cliente-edicion/${row.original.id}`}>
-                      <Button variant="outline" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </td>
+                  {userRol !== null &&
+                    ["ADMIN", "SUPER_ADMIN"].includes(userRol) && (
+                      <td className="px-2 py-1 flex justify-center items-center">
+                        <Link to={`/crm/cliente-edicion/${row.original.id}`}>
+                          <Button variant="outline" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </td>
+                    )}
                 </motion.tr>
               ))}
             </tbody>

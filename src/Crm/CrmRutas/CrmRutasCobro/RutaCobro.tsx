@@ -143,8 +143,8 @@ function RutaCobro() {
         telefono: c.contactoReferencia.telefono,
       },
       location: {
-        lat: c.ubicacion.latitud,
-        lng: c.ubicacion.longitud,
+        lat: isNaN(c?.ubicacion?.latitud) ? 0 : c?.ubicacion?.latitud, // Verifica si la latitud es válida, si no, usa 0
+        lng: isNaN(c?.ubicacion?.longitud) ? 0 : c?.ubicacion?.longitud, // Verifica si la longitud es válida, si no, usa 0
       },
       direccion: c.direccion,
       facturas: c.facturas.map((f) => ({

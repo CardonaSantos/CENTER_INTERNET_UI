@@ -1,10 +1,11 @@
 import { create } from "zustand";
 
-enum RolUsuario {
+export enum RolUsuario {
   TECNICO = "TECNICO",
   OFICINA = "OFICINA",
   ADMIN = "ADMIN",
   SUPER_ADMIN = "SUPER_ADMIN",
+  COBRADOR = "COBRADOR",
 }
 interface CRM_PROPS {
   nombre: string | null;
@@ -20,6 +21,7 @@ interface CRM_PROPS {
 
   setCorreo: (nombre: string) => void;
   setRol: (nombre: RolUsuario) => void;
+
   setEmpresaId: (nombre: number) => void;
   setActivo: (nombre: boolean) => void;
   setTokenCRM: (token: string) => void;

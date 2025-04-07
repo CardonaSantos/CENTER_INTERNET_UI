@@ -650,7 +650,7 @@ export default function TicketDetail({
                   }
                   onChange={handleChangeTecSelect}
                   className="text-black text-[13px]"
-                  menuPlacement="bottom"
+                  menuPlacement="top"
                 />
               </div>
             </div>
