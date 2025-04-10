@@ -81,6 +81,8 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "cantidad", header: "Cantidad" },
   { accessorKey: "fechaCreado", header: "Fecha Creado" },
   { accessorKey: "fechaPago", header: "Fecha de Pago" },
+  { accessorKey: "telefono", header: "Tel." },
+
   { accessorKey: "estado", header: "Estado" },
 ];
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
@@ -452,6 +454,10 @@ export default function BilingTable() {
                       {formatearFecha(row.original.fechaPago)}
                     </td>
                   </Link>
+
+                  <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
+                    {row.original.telefono ? row.original.telefono : "Sin tel."}
+                  </td>
 
                   <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
                     {row.original.por ? row.original.estado : "Sin cobrar"}
